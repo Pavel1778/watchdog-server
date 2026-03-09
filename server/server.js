@@ -338,7 +338,7 @@ wss.on('connection', (ws, req) => {
 
   // Наблюдатель аудиоканал
   if (url.pathname === '/observer/audio') {
-    if (!tok || !['viewer', 'admin'].includes(tok.role)) { ws.close(1008, 'unauthorized'); return; }
+    if (!tok || !['viewer', 'admin', 'donor'].includes(tok.role)) { ws.close(1008, 'unauthorized'); return; }
     const roomId = tok.roomId;
     if (!rooms.has(roomId)) { ws.close(1008, 'room not found'); return; }
     if (!audioObservers.has(roomId)) audioObservers.set(roomId, new Set());
@@ -353,6 +353,34 @@ wss.on('connection', (ws, req) => {
       } catch {}
     });
     ws.on('close', () => audioObservers.get(roomId)?.delete(ws));
+    return;
+  }
+
+  // Донор: бинарный WebSocket стрим кадров (низкая задержка)
+  if (url.pathname === '/stream/frames') {
+    if (!tok || tok.role !== 'donor') { ws.close(1008, 'unauthorized'); return; }
+    const roomId = tok.roomId;
+    if (!rooms.has(roomId)) { ws.close(1008, 'room not found'); return; }
+    console.log(`[WS] Бинарный стрим: ${roomId}`);
+
+    ws.on('message', (data, isBinary) => {
+      if (!isBinary) return;
+      const jpeg = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      if (!jpeg.length) return;
+      const r = rooms.get(roomId);
+      if (!r) return;
+      r.lastFrame = jpeg;
+      r.frameTime = Date.now();
+      if (!activeRecordings.has(roomId)) startRecording(roomId);
+      writeFrame(roomId, jpeg);
+      broadcast(roomId, jpeg);
+    });
+
+    ws.on('close', () => {
+      console.log(`[WS] Бинарный стрим закрыт: ${roomId}`);
+      stopRecording(roomId);
+    });
+    ws.on('error', () => stopRecording(roomId));
     return;
   }
 

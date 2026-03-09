@@ -689,11 +689,21 @@ function animViz(id) {
 }
 
 // ── DONOR APP ─────────────────────────────────────────────────────
+let donorVideo = null;    // HTMLVideoElement
+let donorCanvas = null;   // OffscreenCanvas or regular Canvas
+let donorCtx2d = null;
+let donorFrameWs = null;  // Binary WebSocket for frames
+let donorRafId = null;    // requestAnimationFrame id
+let donorLastSend = 0;    // timestamp of last sent frame
+let donorSending = false; // back-pressure flag
+const DONOR_TARGET_FPS = 30;
+const DONOR_FRAME_MS = 1000 / DONOR_TARGET_FPS;
+const DONOR_JPEG_Q = 0.65; // quality: balance speed vs quality
+
 function startDonorApp() {
   screens.forEach(s => document.getElementById(s).style.display = 'none');
   const app = document.getElementById('app');
-  app.style.display = 'flex';
-  app.style.flexDirection = 'column';
+  app.style.display = 'flex'; app.style.flexDirection = 'column';
   document.getElementById('roleBadge').textContent = 'ДОНОР';
   document.getElementById('roleBadge').className = 'badge badge-d';
   document.getElementById('dRoomDisp').textContent = myRoomId;
@@ -704,21 +714,42 @@ function startDonorApp() {
 async function donorStart() {
   if (donorStreaming) return;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }, audio: false });
-    const video = document.createElement('video');
-    video.srcObject = stream; video.autoplay = true; video.playsInline = true;
-    await new Promise(r => video.onloadedmetadata = r);
-    await video.play();
+    // Prefer back camera, 720p for best latency/quality balance
+    const camStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1280, max: 1280 },
+        height: { ideal: 720,  max: 720  },
+        frameRate: { ideal: 30, max: 30 },
+      },
+      audio: false
+    });
 
-    // Canvas for frame capture
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    camCtx = canvas.getContext('2d');
+    // Video element — never shown in DOM, just used for frame capture
+    donorVideo = document.createElement('video');
+    donorVideo.srcObject = camStream;
+    donorVideo.autoplay = true;
+    donorVideo.playsInline = true;
+    donorVideo.muted = true;
+    await donorVideo.play();
+    await new Promise(r => { donorVideo.onloadeddata = r; setTimeout(r, 2000); });
 
-    // Show preview via canvas
+    // Canvas sized to actual video output
+    const W = donorVideo.videoWidth  || 1280;
+    const H = donorVideo.videoHeight || 720;
+
+    // Use OffscreenCanvas if available — runs off main thread, lower latency
+    if (typeof OffscreenCanvas !== 'undefined') {
+      donorCanvas = new OffscreenCanvas(W, H);
+      donorCtx2d  = donorCanvas.getContext('2d', { alpha: false });
+    } else {
+      donorCanvas = document.createElement('canvas');
+      donorCanvas.width = W; donorCanvas.height = H;
+      donorCtx2d = donorCanvas.getContext('2d', { alpha: false });
+    }
+
+    // Show preview — use a separate small canvas for preview only
     const preview = document.getElementById('camPreview');
-    preview.src = canvas.toDataURL();
     preview.style.display = 'block';
     document.getElementById('camNoSignal').style.display = 'none';
     document.getElementById('camBadge').style.display = 'flex';
@@ -730,44 +761,105 @@ async function donorStart() {
     document.getElementById('dStatus').textContent = 'СТРИМИТ';
     document.getElementById('dStatus').style.color = 'var(--green)';
 
-    // Connect WebSocket
+    // Connect command WS first
     donorConnectWs();
 
-    // Frame loop
-    donorFrameTimer = setInterval(async () => {
-      if (!donorStreaming) return;
-      camCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      // Update preview
-      preview.src = canvas.toDataURL('image/jpeg', 0.7);
-      // Send frame
-      canvas.toBlob(async blob => {
-        if (!blob) return;
-        try {
-          await fetch(`${SERVER}/stream/frame?roomId=${encodeURIComponent(myRoomId)}`, {
-            method:'POST', headers:{'Content-Type':'image/jpeg','Authorization':'Bearer '+token}, body: blob
-          });
-          donorFpsCount++;
-        } catch {}
-      }, 'image/jpeg', 0.7);
-    }, 100);
+    // Connect binary frame WS
+    donorConnectFrameWs();
 
+    // Start FPS counter
     donorFpsTimer = setInterval(() => {
-      const fps = donorFpsCount;
-      donorFpsCount = 0;
+      const fps = donorFpsCount; donorFpsCount = 0;
       document.getElementById('dFps').textContent = fps;
       document.getElementById('camFps').textContent = fps + ' FPS';
     }, 1000);
 
+    // Start frame loop via requestAnimationFrame — synced to display refresh
+    donorRafLoop();
+
     if (donorAudioOn) donorStartAudio();
     toast('Стрим запущен');
-  } catch(e) { toast('Ошибка камеры: '+e.message, 1); }
+  } catch(e) { toast('Ошибка камеры: ' + e.message, 1); }
+}
+
+// ── Frame WebSocket (binary, persistent) ──────────────────────────
+function donorConnectFrameWs() {
+  const wsUrl = SERVER.replace('https://','wss://').replace('http://','ws://');
+  donorFrameWs = new WebSocket(
+    `${wsUrl}/stream/frames?token=${encodeURIComponent(token)}`
+  );
+  donorFrameWs.binaryType = 'arraybuffer';
+  donorFrameWs.onopen = () => { /* ready to send */ };
+  donorFrameWs.onclose = () => {
+    if (donorStreaming) setTimeout(donorConnectFrameWs, 1000);
+  };
+  donorFrameWs.onerror = () => {
+    if (donorStreaming) setTimeout(donorConnectFrameWs, 1000);
+  };
+}
+
+// ── RAF loop — runs at display Hz, throttled to target FPS ─────────
+function donorRafLoop() {
+  if (!donorStreaming) return;
+  donorRafId = requestAnimationFrame(donorRafLoop);
+
+  const now = performance.now();
+  if (now - donorLastSend < DONOR_FRAME_MS) return; // throttle to 30fps
+  if (donorSending) return; // skip if previous frame still encoding
+  if (!donorVideo || donorVideo.readyState < 2) return;
+
+  donorLastSend = now;
+  donorSending = true;
+
+  // Draw video frame to canvas
+  donorCtx2d.drawImage(donorVideo, 0, 0);
+
+  // Encode JPEG — OffscreenCanvas uses convertToBlob, regular uses toBlob
+  const encodePromise = (donorCanvas instanceof OffscreenCanvas)
+    ? donorCanvas.convertToBlob({ type: 'image/jpeg', quality: DONOR_JPEG_Q })
+    : new Promise(res => donorCanvas.toBlob(res, 'image/jpeg', DONOR_JPEG_Q));
+
+  encodePromise.then(blob => {
+    if (!blob || !donorStreaming) { donorSending = false; return; }
+
+    // Send via binary WebSocket — no HTTP overhead
+    if (donorFrameWs?.readyState === WebSocket.OPEN) {
+      blob.arrayBuffer().then(buf => {
+        donorFrameWs.send(buf);
+        donorFpsCount++;
+        donorSending = false;
+      }).catch(() => { donorSending = false; });
+    } else {
+      donorSending = false;
+    }
+
+    // Update preview image (cheap — reuse blob URL)
+    const url = URL.createObjectURL(blob);
+    const preview = document.getElementById('camPreview');
+    const old = preview.src;
+    preview.src = url;
+    if (old.startsWith('blob:')) URL.revokeObjectURL(old);
+  }).catch(() => { donorSending = false; });
 }
 
 function donorStop() {
   donorStreaming = false;
-  clearInterval(donorFrameTimer); clearInterval(donorFpsTimer);
-  donorWs?.close(); donorAudioWs?.close();
-  document.getElementById('camPreview').style.display = 'none';
+
+  if (donorRafId) { cancelAnimationFrame(donorRafId); donorRafId = null; }
+  clearInterval(donorFpsTimer);
+
+  // Stop camera tracks
+  donorVideo?.srcObject?.getTracks().forEach(t => t.stop());
+  donorVideo = null; donorCanvas = null; donorCtx2d = null;
+
+  donorFrameWs?.close(); donorFrameWs = null;
+  donorWs?.close(); donorWs = null;
+  donorAudioWs?.close(); donorAudioWs = null;
+  donorSending = false;
+
+  const preview = document.getElementById('camPreview');
+  if (preview.src.startsWith('blob:')) URL.revokeObjectURL(preview.src);
+  preview.style.display = 'none';
   document.getElementById('camNoSignal').style.display = 'flex';
   document.getElementById('camBadge').style.display = 'none';
   document.getElementById('camFps').style.display = 'none';
@@ -781,13 +873,18 @@ function donorStop() {
   toast('Стрим остановлен');
 }
 
+// ── Command WebSocket ──────────────────────────────────────────────
 function donorConnectWs() {
   const wsUrl = SERVER.replace('https://','wss://').replace('http://','ws://');
   donorWs = new WebSocket(`${wsUrl}/donor?token=${encodeURIComponent(token)}`);
-  donorWs.onopen = () => { document.getElementById('dWs').textContent='ВКЛ'; document.getElementById('dWs').style.color='var(--green)'; };
+  donorWs.onopen = () => {
+    document.getElementById('dWs').textContent = 'ВКЛ';
+    document.getElementById('dWs').style.color = 'var(--green)';
+  };
   donorWs.onclose = () => {
-    document.getElementById('dWs').textContent='ОТКЛ'; document.getElementById('dWs').style.color='var(--dim)';
-    if (donorStreaming) setTimeout(donorConnectWs, 3000);
+    document.getElementById('dWs').textContent = 'ОТКЛ';
+    document.getElementById('dWs').style.color = 'var(--dim)';
+    if (donorStreaming) setTimeout(donorConnectWs, 2000);
   };
   donorWs.onmessage = e => {
     try {
@@ -800,19 +897,15 @@ function donorConnectWs() {
   };
 }
 
-function donorTorch() {
-  donorTorchOn = !donorTorchOn;
-  donorSetTorch(donorTorchOn);
-}
+function donorTorch() { donorSetTorch(!donorTorchOn); }
 function donorSetTorch(on) {
   donorTorchOn = on;
   const btn = document.getElementById('dTorchBtn');
   btn.className = on ? 'ctrl-btn y' : 'ctrl-btn';
   btn.textContent = on ? '🔦 ВКЛ' : '🔦';
-  // Try to control physical torch via camera track
   try {
-    const track = document.querySelector('video')?.srcObject?.getVideoTracks()[0];
-    track?.applyConstraints({ advanced: [{ torch: on }] });
+    donorVideo?.srcObject?.getVideoTracks()[0]
+      ?.applyConstraints({ advanced: [{ torch: on }] });
   } catch {}
 }
 
@@ -822,24 +915,26 @@ async function donorToggleAudio() {
   btn.className = donorAudioOn ? 'ctrl-btn r' : 'ctrl-btn b';
   btn.textContent = donorAudioOn ? '🎤 ВКЛ' : '🎤';
   if (donorAudioOn && donorStreaming) donorStartAudio();
-  else donorAudioWs?.close();
+  else { donorAudioWs?.close(); donorAudioWs = null; }
 }
 
 async function donorStartAudio() {
   const wsUrl = SERVER.replace('https://','wss://').replace('http://','ws://');
-  donorAudioWs = new WebSocket(`${wsUrl}/observer/audio?token=${encodeURIComponent(token)}&role=donor`);
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    donorAudioWs = new WebSocket(`${wsUrl}/observer/audio?token=${encodeURIComponent(token)}`);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: {
+      sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true
+    }, video: false });
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
     const src = audioCtx.createMediaStreamSource(stream);
-    const proc = audioCtx.createScriptProcessor(4096, 1, 1);
+    const proc = audioCtx.createScriptProcessor(2048, 1, 1); // smaller buffer = lower latency
     src.connect(proc); proc.connect(audioCtx.destination);
     proc.onaudioprocess = e => {
-      if (!donorWs || donorWs.readyState !== 1) return;
+      if (donorWs?.readyState !== 1) return;
       const d = e.inputBuffer.getChannelData(0);
       const b = new Int16Array(d.length);
-      for(let i=0;i<d.length;i++) b[i]=Math.max(-32768,Math.min(32767,d[i]*32768));
-      donorWs.send(JSON.stringify({type:'audio',data:btoa(String.fromCharCode(...new Uint8Array(b.buffer)))}));
+      for (let i = 0; i < d.length; i++) b[i] = Math.max(-32768, Math.min(32767, d[i] * 32768));
+      donorWs.send(JSON.stringify({ type: 'audio', data: btoa(String.fromCharCode(...new Uint8Array(b.buffer))) }));
     };
   } catch {}
 }
