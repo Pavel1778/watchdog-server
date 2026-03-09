@@ -2,678 +2,395 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WATCHDOG — Центр наблюдения</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>WATCHDOG</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+:root {
+  --bg:#030608;--bg2:#080d10;--bg3:#0d1418;--panel:#0a1218;
+  --border:#1a2830;--green:#00ff9d;--gd:rgba(0,255,157,.1);
+  --red:#ff3b3b;--yellow:#ffcc00;--blue:#00aaff;--dim:#3a5060;
+  --text:#b8cdd4;--mono:'Share Tech Mono',monospace;--ui:'Rajdhani',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--ui)}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:9999}
 
-  :root {
-    --bg: #030608;
-    --bg2: #080d10;
-    --bg3: #0d1418;
-    --panel: #0a1218;
-    --border: #1a2830;
-    --border-glow: #00ff9d22;
-    --green: #00ff9d;
-    --green-dim: #00cc7a;
-    --green-dark: #00ff9d18;
-    --red: #ff3b3b;
-    --red-dim: #cc2222;
-    --yellow: #ffcc00;
-    --blue: #00aaff;
-    --text: #b8cdd4;
-    --text-dim: #4a6070;
-    --font-mono: 'Share Tech Mono', monospace;
-    --font-ui: 'Rajdhani', sans-serif;
-  }
+/* ── MODALS ─────────────────────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;backdrop-filter:blur(6px)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:28px 24px;width:100%;max-width:400px}
+.card-title{font-family:var(--mono);font-size:11px;letter-spacing:4px;color:var(--dim);margin-bottom:20px;text-transform:uppercase}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* Logo */
+.logo-wrap{text-align:center;margin-bottom:28px;cursor:pointer}
+.logo-ring{width:52px;height:52px;border:2px solid var(--green);border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;animation:pulse 2.5s infinite;position:relative}
+.logo-ring::before{content:'';width:8px;height:8px;background:var(--green);border-radius:50%;animation:blink 1.5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,157,.3)}50%{box-shadow:0 0 0 10px rgba(0,255,157,0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.logo-name{font-family:var(--mono);font-size:20px;color:var(--green);letter-spacing:6px}
+.logo-sub{font-size:10px;color:var(--dim);letter-spacing:3px;margin-top:2px}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-ui);
-    font-size: 15px;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* Role chooser */
+.role-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.role-btn{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:18px 10px;text-align:center;cursor:pointer;transition:.2s;font-family:var(--ui)}
+.role-btn:hover{border-color:var(--green);background:var(--gd)}
+.role-btn.active{border-color:var(--green);background:var(--gd)}
+.role-icon{font-size:28px;margin-bottom:6px}
+.role-label{font-size:13px;font-weight:600;letter-spacing:1px;color:var(--text)}
+.role-desc{font-size:10px;color:var(--dim);margin-top:2px;font-family:var(--mono)}
 
-  /* scanline overlay */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
-    pointer-events: none;
-    z-index: 9999;
-  }
+/* Form */
+.fgroup{margin-bottom:12px}
+.flabel{display:block;font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:2px;margin-bottom:5px}
+.finput{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;transition:.2s;-webkit-appearance:none}
+.finput:focus{border-color:var(--green);box-shadow:0 0 0 2px rgba(0,255,157,.08)}
+.ferr{color:var(--red);font-family:var(--mono);font-size:11px;min-height:16px;margin-top:4px}
 
-  /* ── HEADER ── */
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 24px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 100;
-  }
+/* Buttons */
+.btn-primary{width:100%;padding:12px;background:var(--gd);border:1px solid var(--green);border-radius:4px;color:var(--green);font-family:var(--mono);font-size:12px;letter-spacing:3px;cursor:pointer;transition:.2s;margin-top:4px}
+.btn-primary:hover{background:var(--green);color:var(--bg)}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed}
+.btn-back{background:none;border:none;color:var(--dim);font-family:var(--mono);font-size:11px;cursor:pointer;padding:8px 0;letter-spacing:1px;margin-top:8px;display:block;width:100%;text-align:center}
+.btn-back:hover{color:var(--text)}
 
-  .logo {
-    display: flex; align-items: center; gap: 12px;
-  }
+/* ── APP SHELL ──────────────────────────────────────────── */
+#app{display:none;height:100vh;flex-direction:column}
 
-  .logo-icon {
-    width: 36px; height: 36px;
-    border: 2px solid var(--green);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    position: relative;
-    animation: pulse-ring 2s ease-in-out infinite;
-  }
-  .logo-icon::before {
-    content: '●';
-    color: var(--green);
-    font-size: 14px;
-  }
-  @keyframes pulse-ring {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0.4); }
-    50% { box-shadow: 0 0 0 8px rgba(0,255,157,0); }
-  }
+/* Header */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;min-height:50px}
+.hdr-logo{display:flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none}
+.hdr-dot{width:26px;height:26px;border:1.5px solid var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;animation:pulse 2.5s infinite;flex-shrink:0}
+.hdr-dot::before{content:'';width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.5s infinite}
+.hdr-title{font-family:var(--mono);font-size:13px;color:var(--green);letter-spacing:3px}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.clock{font-family:var(--mono);font-size:14px;color:var(--green);letter-spacing:1px}
+.badge{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:2px;letter-spacing:1px;border:1px solid;white-space:nowrap}
+.badge-v{color:var(--blue);border-color:var(--blue);background:rgba(0,170,255,.08)}
+.badge-d{color:var(--yellow);border-color:var(--yellow);background:rgba(255,204,0,.08)}
+.btn-exit{font-family:var(--mono);font-size:10px;padding:4px 10px;border:1px solid var(--dim);border-radius:2px;background:none;color:var(--dim);cursor:pointer;letter-spacing:1px;transition:.15s}
+.btn-exit:hover{border-color:var(--red);color:var(--red)}
 
-  .logo-text {
-    font-family: var(--font-mono);
-    font-size: 18px;
-    color: var(--green);
-    letter-spacing: 4px;
-  }
-  .logo-sub {
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    display: block;
-    margin-top: -2px;
-  }
+/* ── VIEWER LAYOUT ──────────────────────────────────────── */
+#viewerLayout{display:none;flex:1;flex-direction:column;overflow:hidden}
 
-  .header-right {
-    display: flex; align-items: center; gap: 16px;
-  }
+/* Stream area */
+.stream-area{position:relative;flex:1;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:0}
+#streamImg{max-width:100%;max-height:100%;object-fit:contain;display:none}
+.s-corners::before,.s-corners::after,.s-corners .c-br,.s-corners .c-bl{content:'';position:absolute;width:16px;height:16px;border-color:var(--green);border-style:solid;opacity:.5;pointer-events:none}
+.s-corners{position:absolute;inset:0;pointer-events:none}
+.s-corners::before{top:8px;left:8px;border-width:2px 0 0 2px}
+.s-corners::after{top:8px;right:8px;border-width:2px 2px 0 0}
+.s-corners .c-br{bottom:8px;right:8px;border-width:0 2px 2px 0}
+.s-corners .c-bl{bottom:8px;left:8px;border-width:0 0 2px 2px}
+.rec-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:2px;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
+.rec-badge.on{opacity:1}
+.rec-dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1s infinite}
+.no-signal{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.no-signal-ico{font-size:40px;opacity:.2}
+.no-signal-txt{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:3px}
 
-  .clock {
-    font-family: var(--font-mono);
-    font-size: 20px;
-    color: var(--green);
-    letter-spacing: 2px;
-  }
+/* Info bar */
+.info-bar{display:flex;align-items:center;gap:10px;padding:5px 12px;background:var(--bg2);border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--dim);overflow-x:auto;flex-shrink:0;white-space:nowrap}
+.info-bar span{color:var(--text)}
+.info-div{color:var(--border);margin:0 2px}
 
-  .badge {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 2px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .badge-admin { background: var(--green-dark); color: var(--green); border: 1px solid var(--green); }
-  .badge-viewer { background: rgba(0,170,255,0.1); color: var(--blue); border: 1px solid var(--blue); }
+/* Controls */
+.controls{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg2);border-top:1px solid var(--border);flex-wrap:wrap;flex-shrink:0}
+.ctrl-btn{font-family:var(--ui);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:7px 11px;border:1px solid var(--border);border-radius:3px;background:var(--panel);color:var(--text);cursor:pointer;transition:.15s;white-space:nowrap;flex-shrink:0}
+.ctrl-btn:hover{border-color:var(--green);color:var(--green);background:var(--gd)}
+.ctrl-btn.g{border-color:var(--green);color:var(--green);background:var(--gd)}
+.ctrl-btn.r{border-color:var(--red);color:var(--red);background:rgba(255,59,59,.08)}
+.ctrl-btn.y{border-color:var(--yellow);color:var(--yellow);background:rgba(255,204,0,.08)}
+.ctrl-btn.b{border-color:var(--blue);color:var(--blue);background:rgba(0,170,255,.08)}
+.ctrl-btn:disabled{opacity:.3;cursor:not-allowed}
+.ctrl-sp{flex:1}
 
-  /* ── LAYOUT ── */
-  .layout {
-    display: grid;
-    grid-template-columns: 260px 1fr 260px;
-    grid-template-rows: 1fr;
-    height: calc(100vh - 61px);
-    gap: 0;
-  }
+/* Bottom panels (mobile tabs) */
+.tabs{display:flex;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.tab{flex:1;padding:8px 4px;font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--dim);cursor:pointer;text-align:center;border:none;background:none;transition:.15s;border-bottom:2px solid transparent}
+.tab.active{color:var(--green);border-bottom-color:var(--green)}
+.tab-panels{background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0;overflow:hidden}
+.tab-panel{display:none;padding:10px 12px;max-height:180px;overflow-y:auto}
+.tab-panel.active{display:block}
 
-  /* ── SIDEBAR ── */
-  .sidebar {
-    background: var(--bg2);
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+/* Audio panel */
+.audio-viz{height:32px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;margin:6px 0;display:flex;align-items:center;gap:2px;padding:4px;overflow:hidden}
+.abar{width:3px;background:var(--green);border-radius:2px;min-height:2px;transition:height .1s;opacity:.25}
+.abar.on{opacity:1}
+.audio-status{font-family:var(--mono);font-size:10px;color:var(--dim);display:flex;justify-content:space-between;align-items:center}
 
-  .sidebar-right {
-    border-right: none;
-    border-left: 1px solid var(--border);
-  }
+/* Clips panel */
+.clip-item{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:7px 8px;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.clip-info{flex:1;min-width:0}
+.clip-name{font-family:var(--mono);font-size:9px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clip-size{font-size:10px;color:var(--text);margin-top:1px}
+.clip-dl{font-family:var(--mono);font-size:9px;padding:3px 7px;border:1px solid var(--border);border-radius:2px;background:none;color:var(--dim);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.clip-dl:hover{border-color:var(--green);color:var(--green)}
 
-  .section-title {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 8px;
-  }
+/* ── DONOR LAYOUT ───────────────────────────────────────── */
+#donorLayout{display:none;flex:1;flex-direction:column;overflow:hidden}
+.donor-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.cam-wrap{position:relative;background:#000;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#camPreview{max-width:100%;max-height:100%;object-fit:contain;display:none}
+.cam-overlay{position:absolute;inset:0;pointer-events:none}
+.cam-badge{position:absolute;top:8px;left:8px;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.7);padding:4px 8px;border-radius:3px;font-family:var(--mono);font-size:10px}
+.cam-fps{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);padding:4px 8px;border-radius:3px;font-family:var(--mono);font-size:10px;color:var(--green)}
+.donor-info{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 10px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0}
+.dinfo-item{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:7px 8px}
+.dinfo-label{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px}
+.dinfo-val{font-family:var(--mono);font-size:12px;color:var(--text);margin-top:2px}
+.donor-controls{display:flex;gap:6px;padding:8px 10px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0}
+.donor-controls .ctrl-btn{flex:1;padding:10px 6px;font-size:10px}
 
-  /* ── DONOR CARDS ── */
-  .donor-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-  .donor-card:hover { border-color: var(--green); }
-  .donor-card.active { border-color: var(--green); background: var(--green-dark); }
-  .donor-card::before {
-    content: '';
-    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-    background: var(--text-dim);
-    transition: background 0.2s;
-  }
-  .donor-card.online::before { background: var(--green); }
-  .donor-card.active::before { background: var(--green); }
+/* ── TOAST ──────────────────────────────────────────────── */
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--bg2);border:1px solid var(--green);border-radius:4px;padding:8px 16px;font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:1px;transition:.3s;z-index:1000;white-space:nowrap;opacity:0}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.err{border-color:var(--red);color:var(--red)}
 
-  .donor-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 8px;
-  }
-  .donor-id {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    color: var(--text);
-  }
-  .donor-status {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--text-dim);
-  }
-  .donor-status.online { background: var(--green); animation: blink 1.5s ease-in-out infinite; }
-  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media(min-width:700px){
+  .tab-panel{max-height:220px}
+  .controls{flex-wrap:nowrap}
+  .donor-info{grid-template-columns:repeat(4,1fr)}
+}
+@media(min-width:1000px){
+  #viewerLayout{flex-direction:row}
+  .stream-col{flex:1;display:flex;flex-direction:column;min-width:0}
+  .side-col{width:260px;border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg2);overflow-y:auto}
+  .tabs,.tab-panels{display:none}
+  .side-panel{display:block!important;padding:12px}
+  .side-title{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--dim);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+  .side-section{margin-bottom:16px}
+}
 
-  .donor-meta {
-    font-size: 12px;
-    color: var(--text-dim);
-    line-height: 1.6;
-    font-family: var(--font-mono);
-  }
-  .donor-meta span { color: var(--text); }
-
-  /* ── MAIN CONTENT ── */
-  .main {
-    display: flex;
-    flex-direction: column;
-    background: var(--bg);
-    overflow: hidden;
-  }
-
-  /* ── STREAM VIEW ── */
-  .stream-container {
-    flex: 1;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #000;
-    overflow: hidden;
-  }
-
-  #streamImg {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    display: block;
-  }
-
-  .stream-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  /* Corner brackets */
-  .stream-overlay::before, .stream-overlay::after,
-  .stream-overlay .corner-br, .stream-overlay .corner-bl {
-    content: '';
-    position: absolute;
-    width: 20px; height: 20px;
-    border-color: var(--green);
-    border-style: solid;
-    opacity: 0.6;
-  }
-  .stream-overlay::before { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
-  .stream-overlay::after { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
-  .stream-overlay .corner-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
-  .stream-overlay .corner-bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
-
-  /* REC indicator */
-  .rec-indicator {
-    position: absolute;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--red);
-    letter-spacing: 2px;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .rec-indicator.active { opacity: 1; }
-  .rec-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--red);
-    animation: blink 1s ease-in-out infinite;
-  }
-
-  /* Offline overlay */
-  .offline-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    background: rgba(0,0,0,0.85);
-    font-family: var(--font-mono);
-  }
-  .offline-icon { font-size: 48px; opacity: 0.3; }
-  .offline-text { color: var(--text-dim); letter-spacing: 4px; font-size: 13px; }
-
-  /* Stream info bar */
-  .stream-info {
-    display: flex; align-items: center; gap: 16px;
-    padding: 8px 16px;
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-  .stream-info span { color: var(--text); }
-  .stream-info .divider { color: var(--border); }
-
-  /* ── CONTROLS BAR ── */
-  .controls-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
-
-  .btn {
-    font-family: var(--font-ui);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 7px 16px;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: var(--panel);
-    color: var(--text);
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-  .btn:hover { border-color: var(--green); color: var(--green); background: var(--green-dark); }
-  .btn-green { border-color: var(--green); color: var(--green); background: var(--green-dark); }
-  .btn-red { border-color: var(--red); color: var(--red); background: rgba(255,59,59,0.08); }
-  .btn-red:hover { border-color: var(--red-dim); }
-  .btn-yellow { border-color: var(--yellow); color: var(--yellow); background: rgba(255,204,0,0.08); }
-  .btn-yellow:hover { border-color: var(--yellow); }
-  .btn-blue { border-color: var(--blue); color: var(--blue); background: rgba(0,170,255,0.08); }
-  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-  .controls-spacer { flex: 1; }
-
-  /* ── RIGHT SIDEBAR: CLIPS + AUDIO ── */
-  .clips-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-height: 260px;
-    overflow-y: auto;
-  }
-
-  .clip-item {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  .clip-name {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .clip-meta { font-size: 11px; color: var(--text-dim); }
-  .clip-actions { display: flex; gap: 6px; margin-top: 4px; }
-  .btn-tiny {
-    font-size: 10px;
-    padding: 3px 8px;
-    font-family: var(--font-mono);
-    letter-spacing: 1px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text-dim);
-    cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.15s;
-  }
-  .btn-tiny:hover { border-color: var(--green); color: var(--green); }
-  .btn-tiny.del:hover { border-color: var(--red); color: var(--red); }
-
-  /* ── AUDIO CONTROLS ── */
-  .audio-section {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 12px;
-  }
-
-  .audio-viz {
-    height: 40px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    margin: 8px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    padding: 6px;
-    overflow: hidden;
-  }
-
-  .audio-bar {
-    width: 3px;
-    background: var(--green);
-    border-radius: 2px;
-    min-height: 3px;
-    transition: height 0.1s;
-    opacity: 0.4;
-  }
-  .audio-bar.active { opacity: 1; }
-
-  /* ── LOGIN MODAL ── */
-  .modal-bg {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.92);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-  }
-
-  .modal {
-    background: var(--bg2);
-    border: 1px solid var(--green);
-    border-radius: 6px;
-    padding: 36px;
-    width: 380px;
-    box-shadow: 0 0 60px rgba(0,255,157,0.15);
-    position: relative;
-  }
-
-  .modal-logo {
-    text-align: center;
-    margin-bottom: 28px;
-  }
-  .modal-logo h1 {
-    font-family: var(--font-mono);
-    font-size: 24px;
-    color: var(--green);
-    letter-spacing: 8px;
-  }
-  .modal-logo p {
-    font-size: 12px;
-    color: var(--text-dim);
-    letter-spacing: 3px;
-    margin-top: 4px;
-  }
-
-  .form-group {
-    margin-bottom: 16px;
-  }
-  .form-label {
-    display: block;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-  }
-  .form-input {
-    width: 100%;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 10px 14px;
-    font-family: var(--font-mono);
-    font-size: 14px;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .form-input:focus { border-color: var(--green); }
-
-  .form-select {
-    width: 100%;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 10px 14px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    color: var(--text);
-    outline: none;
-    cursor: pointer;
-    appearance: none;
-  }
-  .form-select:focus { border-color: var(--green); }
-
-  .btn-login {
-    width: 100%;
-    padding: 12px;
-    background: var(--green-dark);
-    border: 1px solid var(--green);
-    border-radius: 3px;
-    color: var(--green);
-    font-family: var(--font-mono);
-    font-size: 14px;
-    letter-spacing: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 8px;
-  }
-  .btn-login:hover { background: var(--green); color: var(--bg); }
-
-  .form-error {
-    color: var(--red);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    text-align: center;
-    margin-top: 8px;
-    min-height: 16px;
-  }
-
-  /* ── TOAST ── */
-  #toast {
-    position: fixed;
-    bottom: 24px; right: 24px;
-    background: var(--bg2);
-    border: 1px solid var(--green);
-    border-radius: 4px;
-    padding: 10px 18px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--green);
-    letter-spacing: 1px;
-    transform: translateY(80px);
-    opacity: 0;
-    transition: all 0.3s;
-    z-index: 2000;
-    max-width: 320px;
-  }
-  #toast.show { transform: translateY(0); opacity: 1; }
-  #toast.error { border-color: var(--red); color: var(--red); }
-
-  /* scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-  /* admin panel toggle */
-  .admin-only { display: none; }
-  body.is-admin .admin-only { display: flex; }
+.side-panel{display:none}
 </style>
 </head>
 <body>
 
-<!-- LOGIN MODAL -->
-<div class="modal-bg" id="loginModal">
-  <div class="modal">
-    <div class="modal-logo">
-      <h1>WATCHDOG</h1>
-      <p>СИСТЕМА НАБЛЮДЕНИЯ v2.0</p>
+<!-- ══ ЭКРАН ВЫБОРА РОЛИ ══════════════════════════════════════════ -->
+<div class="overlay" id="roleScreen">
+  <div class="card">
+    <div class="logo-wrap" onclick="location.reload()">
+      <div class="logo-ring"></div>
+      <div class="logo-name">WATCHDOG</div>
+      <div class="logo-sub">SURVEILLANCE CENTER</div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Пароль доступа</label>
-      <input type="password" class="form-input" id="loginPass" placeholder="••••••••" autofocus>
+    <div class="card-title">Выберите режим</div>
+    <div class="role-btns">
+      <div class="role-btn" onclick="showScreen('viewerLogin')">
+        <div class="role-icon">👁️</div>
+        <div class="role-label">НАБЛЮДАТЕЛЬ</div>
+        <div class="role-desc">Смотреть стрим</div>
+      </div>
+      <div class="role-btn" onclick="showScreen('donorLogin')">
+        <div class="role-icon">📡</div>
+        <div class="role-label">ДОНОР</div>
+        <div class="role-desc">Стримить камеру</div>
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Уровень доступа</label>
-      <select class="form-select" id="loginRole">
-        <option value="viewer">Наблюдатель (только просмотр)</option>
-        <option value="admin">Администратор</option>
-      </select>
-    </div>
-    <button class="btn-login" id="loginBtn">ВОЙТИ</button>
-    <div class="form-error" id="loginError"></div>
   </div>
 </div>
 
-<!-- MAIN UI (hidden until login) -->
-<div id="app" style="display:none">
-  <header>
-    <div class="logo">
-      <div class="logo-icon"></div>
-      <div>
-        <div class="logo-text">WATCHDOG</div>
-        <span class="logo-sub">SURVEILLANCE CENTER</span>
-      </div>
+<!-- ══ ВОЙТИ В КОМНАТУ (наблюдатель) ════════════════════════════ -->
+<div class="overlay" id="viewerLogin" style="display:none">
+  <div class="card">
+    <div class="card-title">Войти в комнату</div>
+    <div class="fgroup">
+      <label class="flabel">ID комнаты</label>
+      <input class="finput" id="vRoomId" placeholder="например: cam-01" autocomplete="off">
     </div>
-    <div class="header-right">
+    <div class="fgroup">
+      <label class="flabel">Пинкод</label>
+      <input class="finput" id="vPin" type="password" placeholder="••••" autocomplete="off">
+    </div>
+    <div class="ferr" id="vErr"></div>
+    <button class="btn-primary" onclick="joinRoom()">ВОЙТИ</button>
+    <button class="btn-back" onclick="showScreen('roleScreen')">← Назад</button>
+  </div>
+</div>
+
+<!-- ══ СОЗДАТЬ КОМНАТУ (донор) ═══════════════════════════════════ -->
+<div class="overlay" id="donorLogin" style="display:none">
+  <div class="card">
+    <div class="card-title">Создать комнату (донор)</div>
+    <div class="fgroup">
+      <label class="flabel">ID комнаты</label>
+      <input class="finput" id="dRoomId" placeholder="например: cam-01" autocomplete="off">
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Пинкод (4-12 символов)</label>
+      <input class="finput" id="dPin" type="password" placeholder="••••" autocomplete="off">
+    </div>
+    <div class="ferr" id="dErr"></div>
+    <button class="btn-primary" onclick="createRoom()">СОЗДАТЬ И НАЧАТЬ СТРИМ</button>
+    <button class="btn-back" onclick="showScreen('roleScreen')">← Назад</button>
+  </div>
+</div>
+
+<!-- ══ APP ═══════════════════════════════════════════════════════ -->
+<div id="app">
+  <header class="hdr">
+    <a class="hdr-logo" href="/" onclick="if(confirm('Выйти?')){logout();return false;}return false;">
+      <div class="hdr-dot"></div>
+      <div>
+        <div class="hdr-title">WATCHDOG</div>
+      </div>
+    </a>
+    <div class="hdr-right">
       <div class="clock" id="clock">--:--:--</div>
-      <div class="badge badge-viewer" id="roleBadge">VIEWER</div>
-      <button class="btn btn-red" onclick="logout()" style="padding:5px 12px;font-size:11px;">ВЫЙТИ</button>
+      <div class="badge" id="roleBadge">—</div>
+      <button class="btn-exit" onclick="logout()">ВЫЙТИ</button>
     </div>
   </header>
 
-  <div class="layout">
-    <!-- LEFT SIDEBAR: DONORS -->
-    <div class="sidebar">
-      <div>
-        <div class="section-title">Доноры / Камеры</div>
-        <div id="donorList">
-          <div style="color:var(--text-dim);font-family:var(--font-mono);font-size:11px;padding:8px 0;">Нет активных доноров...</div>
+  <!-- VIEWER -->
+  <div id="viewerLayout">
+    <div class="stream-col">
+      <div class="stream-area">
+        <div class="no-signal" id="noSignal">
+          <div class="no-signal-ico">📷</div>
+          <div class="no-signal-txt">НЕТ СИГНАЛА</div>
+        </div>
+        <img id="streamImg" src="" alt="">
+        <div class="s-corners"><div class="c-br"></div><div class="c-bl"></div></div>
+        <div class="rec-badge" id="recBadge"><div class="rec-dot"></div>REC</div>
+      </div>
+      <div class="info-bar">
+        <span>КОМНАТА: <span id="iRoom">—</span></span>
+        <span class="info-div">|</span>
+        <span>FPS: <span id="iFps">—</span></span>
+        <span class="info-div">|</span>
+        <span>НАБЛЮД: <span id="iObs">—</span></span>
+        <span class="info-div">|</span>
+        <span id="iRecTxt">ЗАПИСЬ: <span>НЕТ</span></span>
+      </div>
+      <div class="controls">
+        <button class="ctrl-btn y" id="bTOn" onclick="torch('on')" disabled>🔦 ВКЛ</button>
+        <button class="ctrl-btn y" id="bTOff" onclick="torch('off')" disabled>🔦 ВЫКЛ</button>
+        <button class="ctrl-btn g" id="bStart" onclick="streamCmd('start')" disabled>▶ СТАРТ</button>
+        <button class="ctrl-btn r" id="bStop" onclick="streamCmd('stop')" disabled>■ СТОП</button>
+        <button class="ctrl-btn b" id="bMic" onclick="toggleMic()">🎤 МИК</button>
+      </div>
+      <!-- Mobile tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('audio')">🔊 АУДИО</button>
+        <button class="tab" onclick="switchTab('clips')">🎬 КЛИПЫ</button>
+        <button class="tab" id="tabAdmin" onclick="switchTab('admin')" style="display:none">⚙️ ADMIN</button>
+      </div>
+      <div class="tab-panels">
+        <div class="tab-panel active" id="tab-audio">
+          <div class="audio-status">
+            <span style="font-size:10px">Входящий звук</span>
+            <span id="aStatus" style="color:var(--dim)">ОТКЛ</span>
+          </div>
+          <div class="audio-viz" id="aViz"></div>
+          <div style="font-size:10px;color:var(--dim);font-family:var(--mono)">Нажмите МИК для ответа</div>
+        </div>
+        <div class="tab-panel" id="tab-clips">
+          <div id="clipsList" style="font-family:var(--mono);font-size:10px;color:var(--dim)">Загрузка...</div>
+          <button class="ctrl-btn" onclick="loadClips()" style="width:100%;margin-top:6px;font-size:10px">↻ ОБНОВИТЬ</button>
+        </div>
+        <div class="tab-panel" id="tab-admin">
+          <!-- Admin login -->
+          <div id="adminLoginWrap">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:8px;letter-spacing:2px">ПАРОЛЬ АДМИНИСТРАТОРА</div>
+            <div style="display:flex;gap:6px">
+              <input class="finput" id="adminPwd" type="password" placeholder="••••" style="flex:1;padding:7px 10px;font-size:12px" onkeydown="if(event.key==='Enter')adminLogin()">
+              <button class="ctrl-btn g" onclick="adminLogin()" style="white-space:nowrap">ВОЙТИ</button>
+            </div>
+            <div class="ferr" id="adminErr" style="margin-top:5px"></div>
+          </div>
+          <!-- Admin panel -->
+          <div id="adminPanelWrap" style="display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+              <div style="background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:8px">
+                <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:2px">КОМНАТ</div>
+                <div style="font-family:var(--mono);font-size:20px;color:var(--green)" id="aRooms">—</div>
+              </div>
+              <div style="background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:8px">
+                <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:2px">ОНЛАЙН</div>
+                <div style="font-family:var(--mono);font-size:20px;color:var(--green)" id="aOnline">—</div>
+              </div>
+              <div style="background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:8px">
+                <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:2px">КЛИПОВ</div>
+                <div style="font-family:var(--mono);font-size:20px;color:var(--green)" id="aClipsC">—</div>
+              </div>
+              <div style="background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:8px">
+                <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:2px">UPTIME</div>
+                <div style="font-family:var(--mono);font-size:13px;color:var(--text);margin-top:4px" id="aUptime">—</div>
+              </div>
+            </div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:6px">КОМНАТЫ</div>
+            <div id="aRoomsList" style="margin-bottom:10px"></div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:6px">КЛИПЫ</div>
+            <div id="aClipsList"></div>
+            <button class="ctrl-btn" onclick="loadAdminData()" style="width:100%;margin-top:8px;font-size:10px">↻ ОБНОВИТЬ</button>
+            <button class="ctrl-btn r" onclick="adminLogout()" style="width:100%;margin-top:5px;font-size:10px">ВЫЙТИ ИЗ ADMIN</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- MAIN: STREAM -->
-    <div class="main">
-      <div class="stream-container">
-        <div class="offline-overlay" id="offlineOverlay">
-          <div class="offline-icon">📷</div>
-          <div class="offline-text">ВЫБЕРИТЕ ДОНОРА</div>
-          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">Нет подключённых доноров</div>
+    <!-- Desktop sidebar -->
+    <div class="side-col">
+      <div class="side-section side-panel">
+        <div class="side-title">АУДИО</div>
+        <div class="audio-status">
+          <span style="font-size:11px">Входящий звук</span>
+          <span id="aStatus2" style="color:var(--dim);font-family:var(--mono);font-size:10px">ОТКЛ</span>
         </div>
-        <img id="streamImg" src="" alt="" style="display:none">
-        <div class="stream-overlay">
-          <div class="corner-br"></div>
-          <div class="corner-bl"></div>
-        </div>
-        <div class="rec-indicator" id="recIndicator">
-          <div class="rec-dot"></div>REC
-        </div>
+        <div class="audio-viz" id="aViz2" style="margin:7px 0"></div>
+        <div style="font-size:10px;color:var(--dim);font-family:var(--mono)">МИК — ответить донору</div>
       </div>
-
-      <div class="stream-info">
-        <span>ДОНОР: <span id="infoDonar">—</span></span>
-        <span class="divider">|</span>
-        <span>FPS: <span id="infoFps">—</span></span>
-        <span class="divider">|</span>
-        <span>НАБЛЮДАТЕЛЕЙ: <span id="infoObs">—</span></span>
-        <span class="divider">|</span>
-        <span>ЗАПИСЬ: <span id="infoRec">—</span></span>
-        <div style="flex:1"></div>
-        <span style="color:var(--text-dim)" id="infoTime">—</span>
-      </div>
-
-      <div class="controls-bar">
-        <!-- Torch -->
-        <button class="btn" id="btnTorchOn" onclick="torch('on')" disabled>🔦 ВКЛ</button>
-        <button class="btn" id="btnTorchOff" onclick="torch('off')" disabled>🔦 ВЫКЛ</button>
-        <!-- Stream -->
-        <button class="btn btn-green" id="btnStart" onclick="streamControl('start')" disabled>▶ СТАРТ</button>
-        <button class="btn btn-red admin-only" id="btnStop" onclick="streamControl('stop')" disabled>■ СТОП</button>
-        <!-- Audio -->
-        <button class="btn btn-blue" id="btnMic" onclick="toggleMic()">🎤 МИК</button>
-        <div class="controls-spacer"></div>
-        <!-- Admin: server URL -->
-        <input type="text" class="form-input" id="serverUrl" placeholder="https://your-server.onrender.com" style="width:260px;padding:6px 10px;font-size:12px;" oninput="saveServer()">
+      <div class="side-section side-panel">
+        <div class="side-title">ЗАПИСИ</div>
+        <div id="clipsList2" style="font-family:var(--mono);font-size:10px;color:var(--dim)">Загрузка...</div>
+        <button class="ctrl-btn" onclick="loadClips()" style="width:100%;margin-top:6px;font-size:10px">↻ ОБНОВИТЬ</button>
       </div>
     </div>
+  </div>
 
-    <!-- RIGHT SIDEBAR: CLIPS + AUDIO -->
-    <div class="sidebar sidebar-right">
-      <!-- Audio visualizer -->
-      <div>
-        <div class="section-title">Аудио — Донор → Наблюдатель</div>
-        <div class="audio-section">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <span style="font-size:12px;color:var(--text-dim)">Входящий звук</span>
-            <span id="audioStatus" style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim)">ОТКЛ</span>
+  <!-- DONOR -->
+  <div id="donorLayout">
+    <div class="donor-main">
+      <div class="cam-wrap">
+        <div class="no-signal" id="camNoSignal">
+          <div class="no-signal-ico">📷</div>
+          <div class="no-signal-txt">КАМЕРА НЕАКТИВНА</div>
+        </div>
+        <img id="camPreview" src="" alt="">
+        <div class="cam-overlay">
+          <div class="cam-badge" id="camBadge" style="display:none">
+            <div class="rec-dot"></div>
+            <span style="color:var(--red);font-size:10px;letter-spacing:2px">СТРИМИТ</span>
           </div>
-          <div class="audio-viz" id="audioViz">
-            <!-- bars generated by JS -->
-          </div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Двусторонняя связь через WebSocket</div>
+          <div class="cam-fps" id="camFps" style="display:none">0 FPS</div>
         </div>
       </div>
-
-      <!-- Clips -->
-      <div>
-        <div class="section-title">Записи / Клипы</div>
-        <div class="clips-list" id="clipsList">
-          <div style="color:var(--text-dim);font-family:var(--font-mono);font-size:11px;">Загрузка...</div>
+      <div class="donor-info">
+        <div class="dinfo-item">
+          <div class="dinfo-label">КОМНАТА</div>
+          <div class="dinfo-val" id="dRoomDisp">—</div>
         </div>
-        <button class="btn" onclick="loadClips()" style="width:100%;margin-top:8px;font-size:12px;">↻ ОБНОВИТЬ</button>
+        <div class="dinfo-item">
+          <div class="dinfo-label">СТАТУС</div>
+          <div class="dinfo-val" id="dStatus" style="color:var(--dim)">СТОП</div>
+        </div>
+        <div class="dinfo-item">
+          <div class="dinfo-label">FPS</div>
+          <div class="dinfo-val" id="dFps">—</div>
+        </div>
+        <div class="dinfo-item">
+          <div class="dinfo-label">WS</div>
+          <div class="dinfo-val" id="dWs" style="color:var(--dim)">ОТКЛ</div>
+        </div>
       </div>
-
-      <!-- Admin panel -->
-      <div id="adminPanel" class="admin-only" style="flex-direction:column;gap:8px;">
-        <div class="section-title" style="color:var(--yellow)">Администратор</div>
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">Серверный статус обновляется каждые 5с</div>
-        <div id="serverStats" style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);line-height:1.8;background:var(--panel);padding:8px;border-radius:3px;border:1px solid var(--border);">
-          Загрузка...
-        </div>
+      <div class="donor-controls">
+        <button class="ctrl-btn g" id="dStartBtn" onclick="donorStart()">▶ СТАРТ</button>
+        <button class="ctrl-btn r" id="dStopBtn" onclick="donorStop()" disabled>■ СТОП</button>
+        <button class="ctrl-btn y" id="dTorchBtn" onclick="donorTorch()">🔦</button>
+        <button class="ctrl-btn b" id="dAudioBtn" onclick="donorToggleAudio()">🎤</button>
       </div>
     </div>
   </div>
@@ -682,391 +399,458 @@
 <div id="toast"></div>
 
 <script>
-// ─── STATE ─────────────────────────────────────────────────────────────────
-let authToken = localStorage.getItem('wd_token') || '';
-let userRole = localStorage.getItem('wd_role') || '';
-let currentDonor = null;
-let donorList = [];
-let fpsCounter = 0, lastFpsTime = Date.now(), currentFps = 0;
-let micActive = false;
-let audioWs = null;
-let audioCtx = null;
-let mediaStream = null;
-let audioInterval = null;
-let refreshInterval = null;
+// ── STATE ─────────────────────────────────────────────────────────
+const SERVER = location.origin;
+let token = '', role = '', myRoomId = '';
+let pollTimer = null;
+let fpsCount = 0, lastFpsTime = Date.now(), currentFps = 0;
+let micOn = false, mediaStream = null, audioWs = null, audioCtx = null;
 
-const SERVER_KEY = 'wd_server';
-let SERVER = localStorage.getItem(SERVER_KEY) || (location.hostname === 'localhost' ? 'http://localhost:3000' : location.origin);
+// Donor state
+let donorStreaming = false, donorTorchOn = false, donorAudioOn = false;
+let donorFrameTimer = null, donorFpsTimer = null, donorFpsCount = 0;
+let donorWs = null, donorAudioWs = null;
+let camCtx = null; // for canvas preview
 
-// ─── INIT ──────────────────────────────────────────────────────────────────
-document.getElementById('serverUrl').value = SERVER;
-startClock();
+// ── CLOCK ─────────────────────────────────────────────────────────
+setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString('ru-RU'), 1000);
 
-// Auto-login if token exists
-if (authToken) {
-  showApp();
-} else {
-  // Show modal
+// ── SCREENS ───────────────────────────────────────────────────────
+const screens = ['roleScreen','viewerLogin','donorLogin'];
+function showScreen(id) {
+  screens.forEach(s => document.getElementById(s).style.display = s === id ? 'flex' : 'none');
 }
 
-document.getElementById('loginPass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') login();
-});
-document.getElementById('loginBtn').addEventListener('click', login);
+// ── API ───────────────────────────────────────────────────────────
+async function api(path, method = 'GET', body = null) {
+  const h = { 'Content-Type': 'application/json' };
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  const r = await fetch(SERVER + path, { method, headers: h, body: body ? JSON.stringify(body) : null });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || r.status);
+  return data;
+}
 
-// ─── CLOCK ─────────────────────────────────────────────────────────────────
-function startClock() {
+// ── AUTH FLOWS ────────────────────────────────────────────────────
+async function joinRoom() {
+  const roomId = document.getElementById('vRoomId').value.trim();
+  const pin = document.getElementById('vPin').value.trim();
+  document.getElementById('vErr').textContent = '';
+  try {
+    const res = await api('/room/join', 'POST', { roomId, pin });
+    token = res.token; role = 'viewer'; myRoomId = roomId;
+    startViewerApp();
+  } catch(e) { document.getElementById('vErr').textContent = '✗ ' + e.message; }
+}
+
+async function createRoom() {
+  const roomId = document.getElementById('dRoomId').value.trim();
+  const pin = document.getElementById('dPin').value.trim();
+  document.getElementById('dErr').textContent = '';
+  try {
+    const res = await api('/room/create', 'POST', { roomId, pin });
+    token = res.token; role = 'donor'; myRoomId = roomId;
+    startDonorApp();
+  } catch(e) { document.getElementById('dErr').textContent = '✗ ' + e.message; }
+}
+
+document.getElementById('vPin').addEventListener('keydown', e => e.key === 'Enter' && joinRoom());
+document.getElementById('dPin').addEventListener('keydown', e => e.key === 'Enter' && createRoom());
+
+// ── LOGOUT ────────────────────────────────────────────────────────
+function logout() {
+  if (role === 'donor') donorStop();
+  clearInterval(pollTimer);
+  token = ''; role = ''; myRoomId = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('viewerLayout').style.display = 'none';
+  document.getElementById('donorLayout').style.display = 'none';
+  showScreen('roleScreen');
+}
+
+// ── VIEWER APP ────────────────────────────────────────────────────
+function startViewerApp() {
+  screens.forEach(s => document.getElementById(s).style.display = 'none');
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+  app.style.flexDirection = 'column';
+
+  document.getElementById('roleBadge').textContent = 'НАБЛЮДАТЕЛЬ';
+  document.getElementById('roleBadge').className = 'badge badge-v';
+  document.getElementById('iRoom').textContent = myRoomId;
+  document.getElementById('viewerLayout').style.display = 'flex';
+  document.getElementById('viewerLayout').style.flexDirection = 'row';
+
+  buildViz('aViz'); buildViz('aViz2');
+  connectStream();
+  connectAudio();
+  pollRoom();
+  pollTimer = setInterval(pollRoom, 4000);
+  setInterval(loadClips, 20000);
+  loadClips();
+
+  ['bTOn','bTOff','bStart','bStop'].forEach(b => document.getElementById(b).disabled = false);
+  // Show admin tab for everyone (they still need password)
+  document.getElementById('tabAdmin').style.display = '';
+
   setInterval(() => {
-    document.getElementById('clock').textContent = new Date().toLocaleTimeString('ru-RU');
+    currentFps = fpsCount;
+    fpsCount = 0;
+    document.getElementById('iFps').textContent = currentFps;
   }, 1000);
 }
 
-// ─── AUTH ──────────────────────────────────────────────────────────────────
-async function login() {
-  const pass = document.getElementById('loginPass').value.trim();
-  const role = document.getElementById('loginRole').value;
-  const errEl = document.getElementById('loginError');
-  errEl.textContent = '';
+function connectStream() {
+  const img = document.getElementById('streamImg');
+  const url = `${SERVER}/stream?token=${encodeURIComponent(token)}`;
+  img.onload = () => {
+    document.getElementById('noSignal').style.display = 'none';
+    img.style.display = 'block';
+    document.getElementById('recBadge').classList.add('on');
+    fpsCount++;
+  };
+  img.onerror = () => {
+    document.getElementById('noSignal').style.display = 'flex';
+    img.style.display = 'none';
+    document.getElementById('recBadge').classList.remove('on');
+    setTimeout(connectStream, 3000);
+  };
+  img.src = url;
+}
 
+async function pollRoom() {
   try {
-    const res = await api('/auth/login', 'POST', { password: pass, role }, false);
-    if (res.token) {
-      authToken = res.token;
-      userRole = res.role;
-      localStorage.setItem('wd_token', authToken);
-      localStorage.setItem('wd_role', userRole);
-      showApp();
-    }
-  } catch (e) {
-    errEl.textContent = '✗ НЕВЕРНЫЙ ПАРОЛЬ';
-  }
-}
-
-function logout() {
-  authToken = '';
-  userRole = '';
-  localStorage.removeItem('wd_token');
-  localStorage.removeItem('wd_role');
-  clearInterval(refreshInterval);
-  document.getElementById('loginModal').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('loginPass').value = '';
-  document.getElementById('loginError').textContent = '';
-}
-
-function showApp() {
-  document.getElementById('loginModal').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-
-  if (userRole === 'admin') {
-    document.body.classList.add('is-admin');
-    document.getElementById('roleBadge').textContent = 'ADMIN';
-    document.getElementById('roleBadge').className = 'badge badge-admin';
-    document.getElementById('adminPanel').style.display = 'flex';
-  }
-
-  startPolling();
-  buildAudioViz();
-}
-
-// ─── SAVE SERVER URL ───────────────────────────────────────────────────────
-function saveServer() {
-  SERVER = document.getElementById('serverUrl').value.trim().replace(/\/$/, '');
-  localStorage.setItem(SERVER_KEY, SERVER);
-}
-
-// ─── API HELPER ───────────────────────────────────────────────────────────
-async function api(path, method = 'GET', body = null, auth = true) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (auth && authToken) headers['Authorization'] = 'Bearer ' + authToken;
-  const opts = { method, headers };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(SERVER + path, opts);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-// ─── POLLING ───────────────────────────────────────────────────────────────
-function startPolling() {
-  pollDonors();
-  loadClips();
-  refreshInterval = setInterval(() => {
-    pollDonors();
-    if (userRole === 'admin') pollServerStats();
-  }, 4000);
-  setInterval(loadClips, 15000);
-}
-
-async function pollDonors() {
-  try {
-    const donors = await api('/donors');
-    donorList = donors;
-    renderDonors(donors);
-    if (currentDonor) {
-      const d = donors.find(x => x.id === currentDonor);
-      if (d) updateStreamInfo(d);
-    }
+    const info = await api('/room/info');
+    document.getElementById('iObs').textContent = info.observers;
+    const rec = info.recording;
+    const recEl = document.getElementById('iRecTxt');
+    recEl.innerHTML = `ЗАПИСЬ: <span style="color:${rec?'var(--red)':'inherit'}">${rec?'● REC':'НЕТ'}</span>`;
+    document.getElementById('recBadge').classList.toggle('on', rec);
   } catch {}
 }
 
-async function pollServerStats() {
-  try {
-    const s = await api('/status');
-    const el = document.getElementById('serverStats');
-    el.innerHTML = `
-      Доноров онлайн: <span style="color:var(--green)">${s.donors.filter(d=>d.connected).length} / ${s.donors.length}</span><br>
-      Клипов: <span style="color:var(--text)">${s.clips}</span><br>
-      Сервер: <span style="color:var(--green)">OK</span>
-    `;
-  } catch {}
-}
-
-// ─── DONORS ────────────────────────────────────────────────────────────────
-function renderDonors(donors) {
-  const el = document.getElementById('donorList');
-  if (!donors.length) {
-    el.innerHTML = '<div style="color:var(--text-dim);font-family:var(--font-mono);font-size:11px;padding:8px 0;">Нет доноров...</div>';
-    return;
-  }
-  el.innerHTML = donors.map(d => `
-    <div class="donor-card ${d.connected ? 'online' : ''} ${currentDonor === d.id ? 'active' : ''}" onclick="selectDonor('${d.id}')">
-      <div class="donor-header">
-        <span class="donor-id">${d.id}</span>
-        <div class="donor-status ${d.connected ? 'online' : ''}"></div>
-      </div>
-      <div class="donor-meta">
-        Статус: <span>${d.connected ? 'ОНЛАЙН' : 'ОФФЛАЙН'}</span><br>
-        Фонарик: <span>${d.torchOn ? '🔦 ВКЛ' : 'ВЫКЛ'}</span><br>
-        Запись: <span style="color:${d.recording ? 'var(--red)' : 'inherit'}">${d.recording ? '● REC' : 'НЕТ'}</span><br>
-        Наблюдателей: <span>${d.observers}</span>
-      </div>
-    </div>
-  `).join('');
-}
-
-function selectDonor(donorId) {
-  currentDonor = donorId;
-  connectStream(donorId);
-  connectAudio(donorId);
-  // Enable controls
-  document.getElementById('btnTorchOn').disabled = false;
-  document.getElementById('btnTorchOff').disabled = false;
-  document.getElementById('btnStart').disabled = false;
-  document.getElementById('btnStop').disabled = false;
-  renderDonors(donorList);
-}
-
-// ─── STREAM ────────────────────────────────────────────────────────────────
-let streamImg = document.getElementById('streamImg');
-let offlineOverlay = document.getElementById('offlineOverlay');
-let currentStreamUrl = null;
-
-function connectStream(donorId) {
-  const url = `${SERVER}/stream?donorId=${encodeURIComponent(donorId)}`;
-  if (currentStreamUrl === url) return;
-  currentStreamUrl = url;
-
-  streamImg.src = '';
-  streamImg.onload = () => {
-    offlineOverlay.style.display = 'none';
-    streamImg.style.display = 'block';
-    document.getElementById('recIndicator').classList.add('active');
-    fpsCounter++;
-  };
-  streamImg.onerror = () => {
-    offlineOverlay.style.display = 'flex';
-    streamImg.style.display = 'none';
-    document.getElementById('recIndicator').classList.remove('active');
-    offlineOverlay.querySelector('.offline-text').textContent = 'НЕТ СИГНАЛА';
-  };
-  streamImg.src = url;
-
-  // FPS counter
-  setInterval(() => {
-    const now = Date.now();
-    const elapsed = (now - lastFpsTime) / 1000;
-    currentFps = Math.round(fpsCounter / elapsed);
-    fpsCounter = 0;
-    lastFpsTime = now;
-    document.getElementById('infoFps').textContent = currentFps;
-  }, 2000);
-}
-
-function updateStreamInfo(d) {
-  document.getElementById('infoDonar').textContent = d.id;
-  document.getElementById('infoObs').textContent = d.observers;
-  document.getElementById('infoRec').textContent = d.recording ? '● REC' : 'НЕТ';
-  document.getElementById('infoRec').style.color = d.recording ? 'var(--red)' : 'var(--text)';
-  document.getElementById('infoTime').textContent = new Date().toLocaleTimeString('ru-RU');
-}
-
-// ─── CONTROLS ─────────────────────────────────────────────────────────────
+// ── VIEWER CONTROLS ───────────────────────────────────────────────
 async function torch(state) {
-  if (!currentDonor) return;
-  try {
-    await api(`/torch/${state}?donorId=${currentDonor}`, 'POST');
-    toast(`Фонарик ${state === 'on' ? 'ВКЛЮЧЁН' : 'ВЫКЛЮЧЕН'}`);
-  } catch { toast('Ошибка', true); }
+  try { await api(`/torch/${state}`, 'POST'); toast(`Фонарик ${state==='on'?'ВКЛ':'ВЫКЛ'}`); }
+  catch(e) { toast(e.message, 1); }
+}
+async function streamCmd(action) {
+  try { await api(`/stream/${action}`, 'POST'); toast(action === 'stop' ? 'Стрим остановлен' : 'Старт'); }
+  catch(e) { toast(e.message, 1); }
 }
 
-async function streamControl(action) {
-  if (!currentDonor) return;
-  try {
-    await api(`/stream/${action}?donorId=${currentDonor}`, 'POST');
-    toast(action === 'stop' ? 'Стрим остановлен' : 'Команда старт отправлена');
-  } catch { toast('Ошибка', true); }
-}
-
-// ─── AUDIO ────────────────────────────────────────────────────────────────
-function connectAudio(donorId) {
-  if (audioWs) audioWs.close();
-  const wsUrl = SERVER.replace('https://', 'wss://').replace('http://', 'ws://');
-  audioWs = new WebSocket(`${wsUrl}/observer/audio?donorId=${encodeURIComponent(donorId)}`);
-
+// ── AUDIO ─────────────────────────────────────────────────────────
+function connectAudio() {
+  const wsUrl = SERVER.replace('https://','wss://').replace('http://','ws://');
+  audioWs = new WebSocket(`${wsUrl}/observer/audio?token=${encodeURIComponent(token)}`);
   audioWs.onopen = () => {
-    document.getElementById('audioStatus').textContent = 'АКТИВНО';
-    document.getElementById('audioStatus').style.color = 'var(--green)';
+    ['aStatus','aStatus2'].forEach(id => { const el = document.getElementById(id); if(el){el.textContent='АКТИВНО';el.style.color='var(--green)';} });
   };
   audioWs.onclose = () => {
-    document.getElementById('audioStatus').textContent = 'ОТКЛ';
-    document.getElementById('audioStatus').style.color = 'var(--text-dim)';
+    ['aStatus','aStatus2'].forEach(id => { const el = document.getElementById(id); if(el){el.textContent='ОТКЛ';el.style.color='var(--dim)';} });
+    setTimeout(connectAudio, 3000);
   };
-  audioWs.onmessage = (e) => {
-    // Play incoming audio (PCM base64)
-    try {
-      const msg = JSON.parse(e.data);
-      if (msg.type === 'audio' && msg.data) {
-        playAudioChunk(msg.data);
-        animateAudioBars();
-      }
-    } catch {}
+  audioWs.onmessage = e => {
+    try { const m = JSON.parse(e.data); if(m.type==='audio'){playPCM(m.data); animViz('aViz'); animViz('aViz2');} } catch {}
   };
 }
 
-function playAudioChunk(base64Data) {
+function playPCM(b64) {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const raw = atob(base64Data);
-  const buf = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i);
-  audioCtx.decodeAudioData(buf.buffer).then(decoded => {
-    const src = audioCtx.createBufferSource();
-    src.buffer = decoded;
-    src.connect(audioCtx.destination);
-    src.start();
-  }).catch(() => {});
+  try {
+    const raw = atob(b64), buf = new Int16Array(raw.length/2);
+    for(let i=0;i<buf.length;i++) buf[i] = (raw.charCodeAt(i*2)) | (raw.charCodeAt(i*2+1)<<8);
+    const ab = audioCtx.createBuffer(1, buf.length, 16000);
+    const ch = ab.getChannelData(0);
+    for(let i=0;i<buf.length;i++) ch[i] = buf[i]/32768;
+    const src = audioCtx.createBufferSource(); src.buffer=ab; src.connect(audioCtx.destination); src.start();
+  } catch {}
 }
 
 async function toggleMic() {
-  if (!currentDonor) return;
-  const btn = document.getElementById('btnMic');
-  if (!micActive) {
+  const btn = document.getElementById('bMic');
+  if (!micOn) {
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const src = audioCtx.createMediaStreamSource(mediaStream);
       const proc = audioCtx.createScriptProcessor(4096, 1, 1);
-      src.connect(proc);
-      proc.connect(audioCtx.destination);
-      proc.onaudioprocess = (e) => {
-        if (!audioWs || audioWs.readyState !== WebSocket.OPEN) return;
-        const inputData = e.inputBuffer.getChannelData(0);
-        // Convert to base64 for simple transport
-        const buf = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) buf[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-        const b64 = btoa(String.fromCharCode(...new Uint8Array(buf.buffer)));
-        audioWs.send(JSON.stringify({ type: 'audio', data: b64 }));
+      src.connect(proc); proc.connect(audioCtx.destination);
+      proc.onaudioprocess = e => {
+        if (!audioWs || audioWs.readyState !== 1) return;
+        const d = e.inputBuffer.getChannelData(0);
+        const b = new Int16Array(d.length);
+        for(let i=0;i<d.length;i++) b[i]=Math.max(-32768,Math.min(32767,d[i]*32768));
+        audioWs.send(JSON.stringify({type:'audio',data:btoa(String.fromCharCode(...new Uint8Array(b.buffer)))}));
       };
-      micActive = true;
-      btn.textContent = '🎤 МИК ВКЛ';
-      btn.classList.add('btn-red');
-      btn.classList.remove('btn-blue');
-      toast('Микрофон включён — вы говорите с донором');
-    } catch { toast('Нет доступа к микрофону', true); }
+      micOn=true; btn.textContent='🎤 МИК ВКЛ'; btn.className='ctrl-btn r'; toast('Микрофон ВКЛ');
+    } catch { toast('Нет доступа к микрофону',1); }
   } else {
-    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
-    micActive = false;
-    btn.textContent = '🎤 МИК';
-    btn.classList.remove('btn-red');
-    btn.classList.add('btn-blue');
-    toast('Микрофон выключен');
+    mediaStream?.getTracks().forEach(t=>t.stop());
+    micOn=false; btn.textContent='🎤 МИК'; btn.className='ctrl-btn b'; toast('Микрофон ВЫКЛ');
   }
 }
 
-// ─── AUDIO VIZ ────────────────────────────────────────────────────────────
-function buildAudioViz() {
-  const viz = document.getElementById('audioViz');
-  viz.innerHTML = '';
-  for (let i = 0; i < 30; i++) {
-    const bar = document.createElement('div');
-    bar.className = 'audio-bar';
-    bar.style.height = '3px';
-    viz.appendChild(bar);
-  }
-}
-
-function animateAudioBars() {
-  const bars = document.querySelectorAll('.audio-bar');
-  bars.forEach(bar => {
-    const h = Math.random() * 28 + 3;
-    bar.style.height = h + 'px';
-    bar.classList.add('active');
-    setTimeout(() => {
-      bar.style.height = '3px';
-      bar.classList.remove('active');
-    }, 150);
-  });
-}
-
-// ─── CLIPS ────────────────────────────────────────────────────────────────
+// ── CLIPS ─────────────────────────────────────────────────────────
 async function loadClips() {
   try {
     const clips = await api('/clips');
-    const el = document.getElementById('clipsList');
-    if (!clips.length) {
-      el.innerHTML = '<div style="color:var(--text-dim);font-family:var(--font-mono);font-size:11px;">Нет записей</div>';
-      return;
-    }
-    el.innerHTML = clips.slice(0, 20).map(c => {
-      const size = (c.size / 1024 / 1024).toFixed(1);
-      const date = new Date(c.created).toLocaleString('ru-RU');
-      return `
+    const html = clips.length === 0
+      ? '<div style="color:var(--dim)">Нет записей</div>'
+      : clips.slice(0,15).map(c => `
         <div class="clip-item">
-          <div class="clip-name">${c.filename}</div>
-          <div class="clip-meta">${size} МБ · ${date}</div>
-          <div class="clip-actions">
-            <button class="btn-tiny" onclick="downloadClip('${c.filename}')">СКАЧАТЬ</button>
-            ${userRole === 'admin' ? `<button class="btn-tiny del" onclick="deleteClip('${c.filename}')">УДАЛИТЬ</button>` : ''}
+          <div class="clip-info">
+            <div class="clip-name">${c.filename}</div>
+            <div class="clip-size">${(c.size/1024/1024).toFixed(1)} МБ</div>
           </div>
-        </div>
-      `;
-    }).join('');
+          <button class="clip-dl" onclick="dlClip('${c.filename}')">↓ DL</button>
+        </div>`).join('');
+    ['clipsList','clipsList2'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=html; });
+  } catch {}
+}
+function dlClip(f) { const a=document.createElement('a'); a.href=`${SERVER}/clips/${encodeURIComponent(f)}?token=${encodeURIComponent(token)}`; a.download=f; a.click(); }
+
+// ── TABS (mobile) ─────────────────────────────────────────────────
+function switchTab(name) {
+  const tabNames = ['audio','clips','admin'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabNames[i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+name)?.classList.add('active');
+}
+
+// ── ADMIN (inline tab) ────────────────────────────────────────────
+let adminToken = '';
+async function adminLogin() {
+  const pwd = document.getElementById('adminPwd').value;
+  document.getElementById('adminErr').textContent = '';
+  try {
+    const r = await fetch('/auth/admin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password:pwd}) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    adminToken = d.token;
+    document.getElementById('adminLoginWrap').style.display = 'none';
+    document.getElementById('adminPanelWrap').style.display = 'block';
+    loadAdminData();
+    setInterval(loadAdminData, 8000);
+    toast('Добро пожаловать, Admin');
+  } catch(e) { document.getElementById('adminErr').textContent = '✗ ' + e.message; }
+}
+function adminLogout() { adminToken=''; document.getElementById('adminLoginWrap').style.display='block'; document.getElementById('adminPanelWrap').style.display='none'; }
+
+async function loadAdminData() {
+  if (!adminToken) return;
+  try {
+    const s = await fetch('/status', { headers:{'Authorization':'Bearer '+adminToken} }).then(r=>r.json());
+    document.getElementById('aRooms').textContent = s.rooms.length;
+    document.getElementById('aOnline').textContent = s.rooms.filter(r=>r.donorConnected).length;
+    document.getElementById('aClipsC').textContent = s.clips;
+    const up = Math.floor(s.uptime);
+    document.getElementById('aUptime').textContent = `${Math.floor(up/3600)}ч ${Math.floor((up%3600)/60)}м`;
+
+    document.getElementById('aRoomsList').innerHTML = s.rooms.length === 0
+      ? '<div style="font-family:var(--mono);font-size:10px;color:var(--dim)">Нет комнат</div>'
+      : s.rooms.map(r => `<div style="background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:7px 8px;margin-bottom:5px;font-family:var(--mono);font-size:10px;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--text)">${r.id}</span>
+          <span style="color:${r.donorConnected?'var(--green)':'var(--dim)'}">${r.donorConnected?'● ОНЛАЙН':'ОФФЛАЙН'}</span>
+          <span style="color:${r.recording?'var(--red)':'var(--dim)'}">${r.recording?'● REC':'—'}</span>
+          <span style="color:var(--dim)">${r.observers} наблюд</span>
+        </div>`).join('');
+  } catch {}
+
+  try {
+    const clips = await fetch('/clips', { headers:{'Authorization':'Bearer '+adminToken} }).then(r=>r.json());
+    document.getElementById('aClipsList').innerHTML = clips.length === 0
+      ? '<div style="font-family:var(--mono);font-size:10px;color:var(--dim)">Нет клипов</div>'
+      : clips.slice(0,10).map(c => `<div style="background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:7px 8px;margin-bottom:5px;display:flex;align-items:center;gap:8px">
+          <div style="flex:1;min-width:0"><div style="font-family:var(--mono);font-size:9px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.filename}</div>
+          <div style="font-size:10px;color:var(--text)">${(c.size/1024/1024).toFixed(1)} МБ</div></div>
+          <button class="clip-dl" onclick="adminDlClip('${c.filename}')">↓</button>
+          <button class="clip-dl" onclick="adminDelClip('${c.filename}')" style="color:var(--red);border-color:var(--red)">✕</button>
+        </div>`).join('');
+  } catch {}
+}
+function adminDlClip(f) { const a=document.createElement('a'); a.href=`/clips/${encodeURIComponent(f)}?token=${adminToken}`; a.download=f; a.click(); }
+async function adminDelClip(f) {
+  if (!confirm('Удалить '+f+'?')) return;
+  await fetch(`/clips/${encodeURIComponent(f)}`, { method:'DELETE', headers:{'Authorization':'Bearer '+adminToken} });
+  loadAdminData();
+}
+
+// ── VIZ ───────────────────────────────────────────────────────────
+function buildViz(id) {
+  const v=document.getElementById(id); if(!v)return; v.innerHTML='';
+  for(let i=0;i<24;i++){const b=document.createElement('div');b.className='abar';b.style.height='2px';v.appendChild(b);}
+}
+function animViz(id) {
+  document.querySelectorAll(`#${id} .abar`).forEach(b => {
+    b.style.height=(Math.random()*20+2)+'px'; b.classList.add('on');
+    setTimeout(()=>{b.style.height='2px';b.classList.remove('on');},130);
+  });
+}
+
+// ── DONOR APP ─────────────────────────────────────────────────────
+function startDonorApp() {
+  screens.forEach(s => document.getElementById(s).style.display = 'none');
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+  app.style.flexDirection = 'column';
+  document.getElementById('roleBadge').textContent = 'ДОНОР';
+  document.getElementById('roleBadge').className = 'badge badge-d';
+  document.getElementById('dRoomDisp').textContent = myRoomId;
+  document.getElementById('donorLayout').style.display = 'flex';
+  document.getElementById('donorLayout').style.flexDirection = 'column';
+}
+
+async function donorStart() {
+  if (donorStreaming) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }, audio: false });
+    const video = document.createElement('video');
+    video.srcObject = stream; video.autoplay = true; video.playsInline = true;
+    await new Promise(r => video.onloadedmetadata = r);
+    await video.play();
+
+    // Canvas for frame capture
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    camCtx = canvas.getContext('2d');
+
+    // Show preview via canvas
+    const preview = document.getElementById('camPreview');
+    preview.src = canvas.toDataURL();
+    preview.style.display = 'block';
+    document.getElementById('camNoSignal').style.display = 'none';
+    document.getElementById('camBadge').style.display = 'flex';
+    document.getElementById('camFps').style.display = 'block';
+
+    donorStreaming = true;
+    document.getElementById('dStartBtn').disabled = true;
+    document.getElementById('dStopBtn').disabled = false;
+    document.getElementById('dStatus').textContent = 'СТРИМИТ';
+    document.getElementById('dStatus').style.color = 'var(--green)';
+
+    // Connect WebSocket
+    donorConnectWs();
+
+    // Frame loop
+    donorFrameTimer = setInterval(async () => {
+      if (!donorStreaming) return;
+      camCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Update preview
+      preview.src = canvas.toDataURL('image/jpeg', 0.7);
+      // Send frame
+      canvas.toBlob(async blob => {
+        if (!blob) return;
+        try {
+          await fetch(`${SERVER}/stream/frame?roomId=${encodeURIComponent(myRoomId)}`, {
+            method:'POST', headers:{'Content-Type':'image/jpeg','Authorization':'Bearer '+token}, body: blob
+          });
+          donorFpsCount++;
+        } catch {}
+      }, 'image/jpeg', 0.7);
+    }, 100);
+
+    donorFpsTimer = setInterval(() => {
+      const fps = donorFpsCount;
+      donorFpsCount = 0;
+      document.getElementById('dFps').textContent = fps;
+      document.getElementById('camFps').textContent = fps + ' FPS';
+    }, 1000);
+
+    if (donorAudioOn) donorStartAudio();
+    toast('Стрим запущен');
+  } catch(e) { toast('Ошибка камеры: '+e.message, 1); }
+}
+
+function donorStop() {
+  donorStreaming = false;
+  clearInterval(donorFrameTimer); clearInterval(donorFpsTimer);
+  donorWs?.close(); donorAudioWs?.close();
+  document.getElementById('camPreview').style.display = 'none';
+  document.getElementById('camNoSignal').style.display = 'flex';
+  document.getElementById('camBadge').style.display = 'none';
+  document.getElementById('camFps').style.display = 'none';
+  document.getElementById('dStartBtn').disabled = false;
+  document.getElementById('dStopBtn').disabled = true;
+  document.getElementById('dStatus').textContent = 'СТОП';
+  document.getElementById('dStatus').style.color = 'var(--dim)';
+  document.getElementById('dFps').textContent = '—';
+  document.getElementById('dWs').textContent = 'ОТКЛ';
+  document.getElementById('dWs').style.color = 'var(--dim)';
+  toast('Стрим остановлен');
+}
+
+function donorConnectWs() {
+  const wsUrl = SERVER.replace('https://','wss://').replace('http://','ws://');
+  donorWs = new WebSocket(`${wsUrl}/donor?token=${encodeURIComponent(token)}`);
+  donorWs.onopen = () => { document.getElementById('dWs').textContent='ВКЛ'; document.getElementById('dWs').style.color='var(--green)'; };
+  donorWs.onclose = () => {
+    document.getElementById('dWs').textContent='ОТКЛ'; document.getElementById('dWs').style.color='var(--dim)';
+    if (donorStreaming) setTimeout(donorConnectWs, 3000);
+  };
+  donorWs.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.cmd === 'torch') donorSetTorch(msg.state === 'on');
+      if (msg.cmd === 'stopStream') donorStop();
+      if (msg.cmd === 'startStream' && !donorStreaming) donorStart();
+      if (msg.type === 'audio_from_observer') playPCM(msg.data);
+    } catch {}
+  };
+}
+
+function donorTorch() {
+  donorTorchOn = !donorTorchOn;
+  donorSetTorch(donorTorchOn);
+}
+function donorSetTorch(on) {
+  donorTorchOn = on;
+  const btn = document.getElementById('dTorchBtn');
+  btn.className = on ? 'ctrl-btn y' : 'ctrl-btn';
+  btn.textContent = on ? '🔦 ВКЛ' : '🔦';
+  // Try to control physical torch via camera track
+  try {
+    const track = document.querySelector('video')?.srcObject?.getVideoTracks()[0];
+    track?.applyConstraints({ advanced: [{ torch: on }] });
   } catch {}
 }
 
-function downloadClip(filename) {
-  const a = document.createElement('a');
-  a.href = `${SERVER}/clips/${encodeURIComponent(filename)}`;
-  a.download = filename;
-  a.click();
+async function donorToggleAudio() {
+  const btn = document.getElementById('dAudioBtn');
+  donorAudioOn = !donorAudioOn;
+  btn.className = donorAudioOn ? 'ctrl-btn r' : 'ctrl-btn b';
+  btn.textContent = donorAudioOn ? '🎤 ВКЛ' : '🎤';
+  if (donorAudioOn && donorStreaming) donorStartAudio();
+  else donorAudioWs?.close();
 }
 
-async function deleteClip(filename) {
-  if (!confirm(`Удалить ${filename}?`)) return;
+async function donorStartAudio() {
+  const wsUrl = SERVER.replace('https://','wss://').replace('http://','ws://');
+  donorAudioWs = new WebSocket(`${wsUrl}/observer/audio?token=${encodeURIComponent(token)}&role=donor`);
   try {
-    await api(`/clips/${encodeURIComponent(filename)}`, 'DELETE');
-    toast('Клип удалён');
-    loadClips();
-  } catch { toast('Ошибка удаления', true); }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = audioCtx.createMediaStreamSource(stream);
+    const proc = audioCtx.createScriptProcessor(4096, 1, 1);
+    src.connect(proc); proc.connect(audioCtx.destination);
+    proc.onaudioprocess = e => {
+      if (!donorWs || donorWs.readyState !== 1) return;
+      const d = e.inputBuffer.getChannelData(0);
+      const b = new Int16Array(d.length);
+      for(let i=0;i<d.length;i++) b[i]=Math.max(-32768,Math.min(32767,d[i]*32768));
+      donorWs.send(JSON.stringify({type:'audio',data:btoa(String.fromCharCode(...new Uint8Array(b.buffer)))}));
+    };
+  } catch {}
 }
 
-// ─── TOAST ────────────────────────────────────────────────────────────────
-let toastTimer;
-function toast(msg, isError = false) {
+// ── TOAST ─────────────────────────────────────────────────────────
+let toastT;
+function toast(msg, err=0) {
   const el = document.getElementById('toast');
-  el.textContent = (isError ? '✗ ' : '✓ ') + msg;
-  el.className = 'show' + (isError ? ' error' : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+  el.textContent = (err?'✗ ':'✓ ') + msg;
+  el.className = 'show' + (err?' err':'');
+  clearTimeout(toastT); toastT = setTimeout(() => el.className='', 2800);
 }
 </script>
 </body>
